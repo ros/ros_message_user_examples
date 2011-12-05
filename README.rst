@@ -16,7 +16,7 @@ packaging.  This is coming soon to a ROS distribution near you.
 HOW TO USE
 ----------
 
-1.  Find an i386 or amd64 machine running Ubuntu, versions Lucid
+Find an i386 or amd64 machine running Ubuntu, versions Lucid
 through Oneiric::
 
   % lsb_release -a
@@ -26,7 +26,7 @@ through Oneiric::
   Release:	11.04
   Codename:	natty
 
-2.  Add the ppa containing the base ROS packages::
+Add the ppa containing the base ROS packages::
 
   % sudo add-apt-repository ppa:straszheim/ros
   Executing: gpg --ignore-time-conflict --no-options --no-default-keyring --secret-keyring /etc/apt/secring.gpg --trustdb-name /etc/apt/trustdb.gpg --keyring /etc/apt/trusted.gpg --primary-keyring /etc/apt/trusted.gpg --keyserver hkp://keyserver.ubuntu.com:80/ --recv 28DC864133B8140A574339405D1A022D930A190D
@@ -35,7 +35,7 @@ through Oneiric::
   gpg: Total number processed: 1
   gpg:               imported: 1  (RSA: 1)
   
-3.  Install them.  They'll appear in /opt/ros/fuerte::
+Install them.  They'll appear in /opt/ros/fuerte::
 
   % sudo aptitude update
   [lots of output]
@@ -47,7 +47,7 @@ through Oneiric::
   0 upgraded, 9 newly installed, 0 to remove and 55 not upgraded.
   [ more output ]
 
-4.  Get the example code::
+Get the example code::
 
   % git clone git://github.com/ros/ros-message-user-examples.git
   Cloning into ros-message-user-examples...
@@ -57,7 +57,7 @@ through Oneiric::
   Receiving objects: 100% (15/15), 4.35 KiB, done.
   Resolving deltas: 100% (6/6), done.
   
-5.  Run cmake on it.  Don't miss that ``CMAKE_PREFIX_PATH`` variable::
+Run cmake on it.  Don't miss that ``CMAKE_PREFIX_PATH`` variable::
 
   % cd ros-message-user-examples
   % mkdir build 
@@ -84,7 +84,7 @@ through Oneiric::
   -- Generating done
   -- Build files have been written to: /tmp/ros-message-user-examples/build
   
-5.  Build::
+Build::
 
   % make
   Scanning dependencies of target pose_multicaster
@@ -96,19 +96,19 @@ through Oneiric::
   Linking CXX executable pose_receiver
   [100%] Built target pose_receiver
   
-6.  Run the "publisher", called ``pose_multicaster``.  The first
+Run the "publisher", called ``pose_multicaster``.  The first
 creates a ``geometry_msgs::Pose`` with (trivially) changing data
 values.  By default it will send them to the ``224.0.0.1`` multicast
 group::
 
-  % ./pose_multicaster 
+  % ./pose_multicaster
   Multicasting to 224.0.0.1
     | 13 size=60
 
 You'll see it counting up and spinning.  In (several) different
 windows, run the ``pose_receiver``::
 
-  % ./pose_receiver 
+  % ./pose_receiver
   Joining multicast group 224.0.0.1 on iface 0.0.0.0
   position: 
     x: 45.1

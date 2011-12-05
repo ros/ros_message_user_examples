@@ -17,10 +17,12 @@
 #include "boost/bind.hpp"
 #include "boost/date_time/posix_time/posix_time_types.hpp"
 #include <geometry_msgs/Pose.h>
+#include <ros/serialization.h>
 
 const short multicast_port = 30001;
-const int max_message_count = 10;
+const int max_message_count = 1000;
 
+const char twirly[] = "-\\|/";
 class sender
 {
 public:
@@ -31,21 +33,14 @@ public:
       timer_(io_service),
       message_count_(0)
   {
-    std::ostringstream os;
-    os << "Message " << message_count_++;
-    message_ = os.str();
-
-    socket_.async_send_to(
-        boost::asio::buffer(message_), endpoint_,
-        boost::bind(&sender::handle_send_to, this,
-          boost::asio::placeholders::error));
+    handle_timeout(boost::system::error_code());
   }
 
   void handle_send_to(const boost::system::error_code& error)
   {
     if (!error && message_count_ < max_message_count)
     {
-      timer_.expires_from_now(boost::posix_time::seconds(1));
+      timer_.expires_from_now(boost::posix_time::milliseconds(250));
       timer_.async_wait(
           boost::bind(&sender::handle_timeout, this,
             boost::asio::placeholders::error));
@@ -56,14 +51,21 @@ public:
   {
     if (!error)
     {
-      std::ostringstream os;
-      os << "Message " << message_count_++;
-      message_ = os.str();
+      ++message_count_;
 
-      socket_.async_send_to(
-          boost::asio::buffer(message_), endpoint_,
-          boost::bind(&sender::handle_send_to, this,
-            boost::asio::placeholders::error));
+      // put some data in the next pose
+      pose.position.x = message_count_ * 1.1;
+      pose.position.y = message_count_ * 2.2;
+      pose.position.z = message_count_ * 3.3;
+
+      msg = ros::serialization::serializeMessage(pose);
+
+      socket_.async_send_to(boost::asio::buffer(msg.message_start, msg.num_bytes), 
+                            endpoint_,
+                            boost::bind(&sender::handle_send_to, this,
+                                        boost::asio::placeholders::error));
+      std::cout << "    " << twirly[message_count_%4] << " " << message_count_ << "\r";
+      std::cout.flush();
     }
   }
 
@@ -72,7 +74,13 @@ private:
   boost::asio::ip::udp::socket socket_;
   boost::asio::deadline_timer timer_;
   int message_count_;
-  std::string message_;
+
+  geometry_msgs::Pose pose;
+  ros::SerializedMessage msg;
+
+
+  std::vector<uint8_t> buf;
+
 };
 
 int main(int argc, char* argv[])

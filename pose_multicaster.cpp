@@ -57,6 +57,7 @@ public:
       pose.position.x = message_count_ * 1.1;
       pose.position.y = message_count_ * 2.2;
       pose.position.z = message_count_ * 3.3;
+      pose.orientation.x = pose.orientation.y = pose.orientation.z = pose.orientation.w = message_count_;
 
       msg = ros::serialization::serializeMessage(pose);
 
@@ -64,7 +65,7 @@ public:
                             endpoint_,
                             boost::bind(&sender::handle_send_to, this,
                                         boost::asio::placeholders::error));
-      std::cout << "    " << twirly[message_count_%4] << " " << message_count_ << "\r";
+      std::cout << "    " << twirly[message_count_%4] << " " << message_count_ << " size=" << msg.num_bytes << "\r";
       std::cout.flush();
     }
   }
@@ -87,18 +88,10 @@ int main(int argc, char* argv[])
 {
   try
   {
-    if (argc != 2)
-    {
-      std::cerr << "Usage: sender <multicast_address>\n";
-      std::cerr << "  For IPv4, try:\n";
-      std::cerr << "    sender 239.255.0.1\n";
-      std::cerr << "  For IPv6, try:\n";
-      std::cerr << "    sender ff31::8000:1234\n";
-      return 1;
-    }
-
+    const char* mcast_address = argc > 1 ? argv[1] : "224.0.0.1";
+    std::cout << "Multicasting to " << mcast_address << "\n";
     boost::asio::io_service io_service;
-    sender s(io_service, boost::asio::ip::address::from_string(argv[1]));
+    sender s(io_service, boost::asio::ip::address::from_string(mcast_address));
     io_service.run();
   }
   catch (std::exception& e)

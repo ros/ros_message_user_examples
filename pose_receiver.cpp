@@ -8,10 +8,15 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+// tweaked to receive ROS Poses, 2011 Troy D. Straszheim
+
 #include <iostream>
 #include <string>
 #include <boost/asio.hpp>
 #include "boost/bind.hpp"
+
+#include <geometry_msgs/Pose.h>
+#include <ros/serialization.h>
 
 const short multicast_port = 30001;
 
@@ -23,6 +28,8 @@ public:
       const boost::asio::ip::address& multicast_address)
     : socket_(io_service)
   {
+    msg.buf.reset(new uint8_t[max_length]);
+
     // Create the socket so that multiple may be bound to the same address.
     boost::asio::ip::udp::endpoint listen_endpoint(
         listen_address, multicast_port);
@@ -31,57 +38,54 @@ public:
     socket_.bind(listen_endpoint);
 
     // Join the multicast group.
-    socket_.set_option(
-        boost::asio::ip::multicast::join_group(multicast_address));
+    socket_.set_option(boost::asio::ip::multicast::join_group(multicast_address));
 
-    socket_.async_receive_from(
-        boost::asio::buffer(data_, max_length), sender_endpoint_,
-        boost::bind(&receiver::handle_receive_from, this,
-          boost::asio::placeholders::error,
-          boost::asio::placeholders::bytes_transferred));
+    socket_.async_receive_from(boost::asio::buffer(msg.buf.get(), max_length),
+                               sender_endpoint_,
+                               boost::bind(&receiver::handle_receive_from, this,
+                                           boost::asio::placeholders::error,
+                                           boost::asio::placeholders::bytes_transferred));
   }
 
   void handle_receive_from(const boost::system::error_code& error,
-      size_t bytes_recvd)
+                           size_t bytes_recvd)
   {
     if (!error)
     {
-      std::cout.write(data_, bytes_recvd);
-      std::cout << std::endl;
-
-      socket_.async_receive_from(
-          boost::asio::buffer(data_, max_length), sender_endpoint_,
-          boost::bind(&receiver::handle_receive_from, this,
-            boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred));
+      msg.num_bytes = bytes_recvd;
+      msg.message_start = msg.buf.get();
+      ros::serialization::deserializeMessage(msg, pose);
+      ros::message_operations::Printer<geometry_msgs::Pose>::stream(std::cout, "", pose);
+      std::cout << "\n";
+      socket_.async_receive_from(boost::asio::buffer(msg.buf.get(), max_length), sender_endpoint_,
+                                 boost::bind(&receiver::handle_receive_from, this,
+                                             boost::asio::placeholders::error,
+                                             boost::asio::placeholders::bytes_transferred));
     }
   }
 
 private:
   boost::asio::ip::udp::socket socket_;
   boost::asio::ip::udp::endpoint sender_endpoint_;
+  ros::SerializedMessage msg;
+  geometry_msgs::Pose pose;
+
   enum { max_length = 1024 };
-  char data_[max_length];
 };
 
 int main(int argc, char* argv[])
 {
   try
   {
-    if (argc != 3)
-    {
-      std::cerr << "Usage: receiver <listen_address> <multicast_address>\n";
-      std::cerr << "  For IPv4, try:\n";
-      std::cerr << "    receiver 0.0.0.0 239.255.0.1\n";
-      std::cerr << "  For IPv6, try:\n";
-      std::cerr << "    receiver 0::0 ff31::8000:1234\n";
-      return 1;
-    }
+    const char* listen_addr = argc > 1 ? argv[1] : "0.0.0.0";
+    const char* mcast_group = argc > 2 ? argv[2] : "224.0.0.1";
+
+    std::cout << "Joining multicast group " << mcast_group << " on iface " << listen_addr << "\n";
 
     boost::asio::io_service io_service;
     receiver r(io_service,
-        boost::asio::ip::address::from_string(argv[1]),
-        boost::asio::ip::address::from_string(argv[2]));
+               boost::asio::ip::address::from_string(listen_addr),
+               boost::asio::ip::address::from_string(mcast_group));
     io_service.run();
   }
   catch (std::exception& e)

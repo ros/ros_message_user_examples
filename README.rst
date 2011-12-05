@@ -34,7 +34,7 @@ Add the ppa containing the base ROS packages::
   gpg: key 930A190D: public key "Launchpad PPA for Troy Straszheim" imported
   gpg: Total number processed: 1
   gpg:               imported: 1  (RSA: 1)
-  
+
 Install them.  They'll appear in /opt/ros/fuerte::
 
   % sudo aptitude update
@@ -46,6 +46,9 @@ Install them.  They'll appear in /opt/ros/fuerte::
     ros-fuerte-genmsg ros-fuerte-genpy ros-fuerte-ros-comm ros-fuerte-roscpp-core ros-fuerte-std-msgs
   0 upgraded, 9 newly installed, 0 to remove and 55 not upgraded.
   [ more output ]
+
+  % ls /opt/ros/fuerte 
+  bin/  env.sh*  etc/  include/  lib/  setup.bash  setup.sh  setup.zsh  share/
 
 Get the example code::
 

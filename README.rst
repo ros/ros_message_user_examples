@@ -136,3 +136,56 @@ windows, run the ``pose_receiver``::
   [etc]
 
 
+The code
+--------
+
+The code itself is a relatively minor tweak of the ``boost::asio``
+multicast examples at
+http://www.boost.org/doc/libs/1_48_0/doc/html/boost_asio/examples.html#boost_asio.examples.multicast.
+If you compile these in release mode they are quite small::
+  
+  % ls -sh pose*
+  220K pose_multicaster*	160K pose_receiver*
+
+And the library dependencies are also fairly minimal::
+
+  % ldd pose*        
+  pose_multicaster:
+  	linux-vdso.so.1 =>  (0x00007fffcf4af000)
+  	libroscpp_serialization.so => /opt/ros/fuerte/lib/libroscpp_serialization.so (0x00007f8db1628000)
+  	libboost_thread.so.1.42.0 => /usr/lib/libboost_thread.so.1.42.0 (0x00007f8db13db000)
+  	libboost_system.so.1.42.0 => /usr/lib/libboost_system.so.1.42.0 (0x00007f8db11d6000)
+  	libstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f8db0ed0000)
+  	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f8db0c4b000)
+  	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f8db0a34000)
+  	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f8db06a0000)
+  	libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f8db0482000)
+  	librt.so.1 => /lib/x86_64-linux-gnu/librt.so.1 (0x00007f8db0279000)
+  	/lib64/ld-linux-x86-64.so.2 (0x00007f8db182d000)
+  
+i.e. the boost libraries, about 100K total::
+
+  % ls -sh /usr/lib/libboost_(thread|system).so.1.42.0
+  16K /usr/lib/libboost_system.so.1.42.0	88K /usr/lib/libboost_thread.so.1.42.0
+  
+And ``roscpp_serialization``, also fairly light::
+
+  % ls -sh /opt/ros/fuerte/lib/libroscpp_serialization.so 
+  12K /opt/ros/fuerte/lib/libroscpp_serialization.so
+
+``ps`` as usual, gives one a total that includes shared libraries
+(that are probably mmapped into many processes)::
+
+  % ps -FwC pose_multicaster
+  UID        PID  PPID  C    SZ   RSS PSR STIME TTY          TIME CMD
+  1214     23484 16959  0  5649  1492   7 15:56 pts/8    00:00:00 ./pose_multicaster
+
+``pmap`` gives us a number (*writeable/private*) that is closer to the
+incremental cost of running this program::
+
+  % pmap -d 23484 | tail -1
+  mapped: 22596K    writeable/private: 480K    shared: 0K
+
+480k... about right.
+
+
